@@ -1,0 +1,101 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Movies!</title>
+    <style type="text/css">
+      body {
+        margin: 30px;
+        color: rgba(0,0,0,0.75);
+        font-family: sans-serif;
+      }
+      h1 {
+        margin-bottom: -20px;
+      }
+      h2 {
+        color: rgba(0,0,0,0.5);
+      }
+      h3 {
+        color: rgba(0,0,0,0.5);
+      }
+      a {
+        color: rgba(0,0,255,0.45);
+      }
+    </style>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
+    <script type="text/javascript" src="underscore-min.js"></script>
+    <script src="permissions.json"></script>
+  </head>
+  <body>
+    <h1>Movies!</h1>
+    <h2>Movies for q0rt</h2>
+    <div id="movies"></div>
+
+    <script>
+    function process(stack) {
+      var rtUrl = stack.pop();
+      $.getJSON(rtUrl.url, function(data) {
+        var movies = _.sortBy(data.movies, function(movie) {
+          var unixTime = Date.parse(movie.release_dates.theater);
+          if (unixTime > Date.now()) {
+            return 0;
+          }
+          else {
+            return -unixTime;
+          }
+        });
+        var rating = movies[0].ratings.critics_score;
+        var thisMovie = $('#'+rtUrl.id);
+        var thisMovieA = $('#'+rtUrl.id+' a');
+        thisMovie.append('<span> - ' + rating + '</span>');
+        if (rating >= 80) {
+          thisMovieA.css('background','rgba(255,255,0,0.25)');
+        }
+        if (rating >= 90) {
+          thisMovieA.css('background','rgba(255,255,0,0.55)');
+        }
+      });
+      if (stack.length > 0) {
+        setTimeout(process, 200, stack);
+      }
+    }
+    var feedUrl = 'http://www.fandango.com/rss/moviesnearme_aaduz_aaeis_aadrs_aadsb_aadsc.rss';
+    $.ajax({
+        url: "http://ajax.googleapis.com/ajax/services/feed/load?v=1.0&num=" + 5 + "&output=json&q=" + encodeURIComponent(feedUrl) + "&hl=en&callback=?",
+        dataType: "json",
+        success: function (data) {
+            var theaters = data.responseData.feed.entries;
+            var stack = [];
+            theaters.forEach(function(theater, theaterInd, theaters) {
+              var title = theater.title;
+              var $m = $('#movies');
+              $m.append('<div class="theater" id="theater'+theaterInd+'"><h3>'+title+'</h3></div>');
+              var movies = theater.content.split('<p><ul><li>')[1].split('</li></ul>')[0].split('</li><li>');
+              movies.forEach(function(el, ind, arr) {
+                var rtTitle = $(el).text().replace(/ /g,'+');
+                var id = 't'+theaterInd+'m'+ind;
+                console.log(rtTitle,id);
+                stack.push({
+                  url: 'http://api.rottentomatoes.com/api/public/v1.0/movies.json?apikey='+key.API_KEY+'&q='+rtTitle+'&page_limit=5&callback=?',
+                  id: id
+                });
+                $('#theater'+theaterInd).append('<li id="'+id+'">'+el+'</li>');
+              });  
+            });
+            process(stack);
+        }
+    });
+    </script>
+    <script type="text/javascript">
+    var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+    document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+    try {
+      var pageTracker = _gat._getTracker("UA-339043-1");
+      pageTracker._trackPageview();
+    } catch(err) {}
+    </script>
+ </body>
+</html>
