@@ -34,7 +34,8 @@
 
     <script>
     function process(stack) {
-      var rtUrl = stack.pop();
+      var rtUrl = _.first(stack);
+      stack = _.rest(stack);
       $.getJSON(rtUrl.url, function(data) {
         var movies = _.sortBy(data.movies, function(movie) {
           var unixTime = Date.parse(movie.release_dates.theater);
@@ -46,6 +47,9 @@
           }
         });
         var rating = movies[0].ratings.critics_score;
+        if (rating === -1) {
+          rating = 'n/a';
+        }
         var thisMovie = $('#'+rtUrl.id);
         var thisMovieA = $('#'+rtUrl.id+' a');
         thisMovie.append('<span> - ' + rating + '</span>');
